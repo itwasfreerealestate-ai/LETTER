@@ -1,0 +1,273 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Envelope</title>
+<style>
+body {
+    margin: 0;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    font-family: 'Times New Roman', serif; /* Elegant font */
+    background: black;
+}
+
+/* Background video */
+#bgVideo {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 0;
+    filter: blur(8px);
+}
+
+/* Falling names container */
+#fallingNames {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Scene container */
+.scene {
+    position: relative;
+    cursor: pointer;
+    z-index: 2;
+}
+
+/* Envelope */
+.envelope {
+    width: 300px;
+    z-index: 2;
+    transition: transform 1s ease;
+}
+
+/* Letter */
+.letter {
+    position: absolute;
+    width: 250px;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, 100%);
+    opacity: 0;
+    transition: all 1s ease;
+    z-index: 2;
+}
+.show-letter {
+    transform: translate(-50%, -50%) scale(1.1);
+    opacity: 1;
+    transition: all 1s ease;
+}
+
+/* Instruction text */
+#instruction {
+    position: absolute;
+    bottom: 40px;
+    color: white;
+    font-size: 16px;
+    opacity: 0.8;
+    animation: fadeBlink 2s infinite;
+    z-index: 3;
+}
+@keyframes fadeBlink {
+    0%,100% { opacity: 0.8; }
+    50% { opacity: 0.3; }
+}
+
+/* Overlay for opening effect */
+#overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: black;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 32px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.8s ease;
+    z-index: 5;
+}
+#overlay.show-overlay {
+    opacity: 1;
+}
+#overlay span {
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+#overlay.show-overlay span {
+    opacity: 1;
+}
+
+/* Elegant glowing falling names */
+.fallingName {
+    position: absolute;
+    color: #fff;
+    font-family: 'Georgia', serif;
+    font-weight: bold;
+    font-size: 18px;
+    text-shadow: 0 0 5px #fff, 0 0 10px #f0e68c, 0 0 20px #ffd700;
+    opacity: 0.8;
+    user-select: none;
+    pointer-events: none;
+    white-space: nowrap;
+    transition: transform 0.2s linear;
+}
+@media (max-width: 600px) {
+    .envelope { width: 200px; }
+    .letter { width: 180px; }
+    .fallingName { font-size: 14px; }
+}
+/* Glowing vignette overlay */
+#vignette {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 3; /* above video but below envelope */
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(0,0,0,0.9) 70%);
+    opacity: 0;
+    mix-blend-mode: screen;
+    transition: opacity 0.2s linear;
+}
+</style>
+</head>
+<body>
+<!-- Glowing vignette overlay -->
+<div id="vignette"></div>
+<!-- Background Video -->
+<video id="bgVideo" autoplay muted loop>
+    <source src="bg.mp4" type="video/mp4">
+    Your browser does not support the video tag.
+</video>
+
+<!-- Falling names -->
+<div id="fallingNames"></div>
+
+<!-- Envelope Scene -->
+<div class="scene" onclick="startSequence()">
+    <img src="closed.png" id="envelope" class="envelope">
+    <img src="letter.png" id="letter" class="letter">
+</div>
+
+<!-- Instruction -->
+<p id="instruction">Click the envelope to open</p>
+
+<!-- Overlay -->
+<div id="overlay">
+    <span id="openingText">Opening the letter...</span>
+</div>
+
+<!-- Sounds -->
+<audio id="openSFX" src="open.mp3"></audio>
+<audio id="bgMusic" src="music.mp3" loop></audio>
+
+<script>
+let started = false;
+const names = ["Celestino","Marmol","Bernardo","Lafuerza","Pasialen","Pacoma","Purcia","Gabriel","Alejandro","De Luna","Lorenzo","Santos","Mendoza","Manallo","Rabe","Espiritu","Galang","Alcantara","Ricalde","Caindoy","Pilar","Dulfo","Casno","Balmes","Ligao","Jalique"];
+
+function startSequence() {
+    if (started) return;
+    started = true;
+
+    const envelope = document.getElementById("envelope");
+    const letter = document.getElementById("letter");
+    const overlay = document.getElementById("overlay");
+    const instruction = document.getElementById("instruction");
+    const openSFX = document.getElementById("openSFX");
+
+    instruction.style.transition = "opacity 0.5s";
+    instruction.style.opacity = 0;
+
+    overlay.classList.add("show-overlay");
+
+    openSFX.play().catch(e => console.log("Audio blocked:", e));
+
+    setTimeout(() => {
+        overlay.classList.remove("show-overlay");
+        envelope.src = "opened.png";
+        letter.classList.add("show-letter");
+        startFallingNames();
+    }, 1200);
+}
+
+// Background music on first click anywhere
+const bgMusic = document.getElementById("bgMusic");
+let musicStarted = false;
+document.addEventListener('click', () => {
+    if (!musicStarted) {
+        bgMusic.play().catch(e => console.log("BG music blocked:", e));
+        musicStarted = true;
+    }
+});
+
+// Falling names effect
+function startFallingNames() {
+    const container = document.getElementById("fallingNames");
+
+    setInterval(() => {
+        const nameEl = document.createElement("div");
+        nameEl.className = "fallingName";
+        nameEl.textContent = names[Math.floor(Math.random() * names.length)];
+        nameEl.style.left = Math.random() * window.innerWidth + "px";
+        nameEl.style.top = "-40px";
+        nameEl.style.fontSize = (14 + Math.random() * 24) + "px";
+        container.appendChild(nameEl);
+
+        const speed = 1 + Math.random() * 2;
+        const rotate = (Math.random() - 0.5) * 20; // subtle rotation
+
+        const fallInterval = setInterval(() => {
+            let top = parseFloat(nameEl.style.top);
+            top += speed;
+            nameEl.style.top = top + "px";
+            nameEl.style.transform = `rotate(${rotate}deg)`;
+
+            if (top > window.innerHeight + 50) {
+                nameEl.remove();
+                clearInterval(fallInterval);
+            }
+        }, 20);
+    }, 250);
+}
+// Vignette glow pulse
+const vignette = document.getElementById("vignette");
+let pulseStart = null;
+
+function pulseVignette(timestamp) {
+    if (!pulseStart) pulseStart = timestamp;
+    const elapsed = timestamp - pulseStart;
+    // Glow oscillates between 0.2 and 0.6 opacity
+    vignette.style.opacity = 0.2 + 0.4 * Math.abs(Math.sin(elapsed / 500));
+    requestAnimationFrame(pulseVignette);
+}
+
+// Start music + vignette pulse on first click
+document.addEventListener('click', () => {
+    if (!musicStarted) {
+        bgMusic.play().catch(e => console.log("BG music blocked:", e));
+        musicStarted = true;
+        requestAnimationFrame(pulseVignette); // start glowing vignette
+    }
+});
+</script>
+
+</body>
+</html>
